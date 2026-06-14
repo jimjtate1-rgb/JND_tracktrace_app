@@ -1,0 +1,34 @@
+# Render Blueprint — deploy with: New > Blueprint, then connect this repo.
+# Free tier to start (note: Render's free Postgres is deleted after ~30 days;
+# upgrade the db plan to keep data long-term). preDeployCommand needs a paid
+# instance, so migrations run in the build command here to stay free-tier-friendly.
+databases:
+  - name: jnd-tracktrace-db
+    databaseName: tracktrace
+    user: tracktrace
+    plan: free
+
+services:
+  - type: web
+    name: jnd-track-and-trace
+    runtime: python
+    plan: free
+    healthCheckPath: /
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && python manage.py seed_data --if-empty"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true          # Render generates a strong secret
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jnd-tracktrace-db
+          property: connectionString
+      # Optional — add when you go live with real feeds:
+      # DCSA_BASE_URL, DCSA_API_KEY, DCSA_WEBHOOK_SECRET,
+      # AIR_FEED_BASE_URL, AIR_FEED_API_KEY, AIR_WEBHOOK_SECRET
