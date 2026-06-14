@@ -38,9 +38,8 @@
     <ul class="ac-airlines">
       {% for a in airlines %}
         <li><a href="{{ a.url }}" target="_blank" rel="noopener">
-          <span class="ac-pfx">{{ a.prefix }}</span>
+          {% if a.iata %}<span class="ac-pfx">{{ a.iata }}</span>{% endif %}
           <span class="ac-name">{{ a.name }}</span>
-          <span class="ac-iata">{{ a.iata }}</span>
         </a></li>
       {% endfor %}
     </ul>

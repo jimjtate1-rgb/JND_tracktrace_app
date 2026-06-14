@@ -39,7 +39,7 @@
     <ul class="ac-airlines">
       {% for l in lines %}
         <li><a href="{{ l.url }}" target="_blank" rel="noopener">
-          <span class="ac-pfx">{{ l.scac }}</span>
+          {% if l.scac %}<span class="ac-pfx">{{ l.scac }}</span>{% endif %}
           <span class="ac-name">{{ l.name }}</span>
         </a></li>
       {% endfor %}

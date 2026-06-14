@@ -20,11 +20,11 @@
   <link rel="stylesheet" href="{% static 'web/styles.css' %}">
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to results</a>
+  <a class="skip-link" href="#main">Skip to content</a>
   <span id="sr-status" class="visually-hidden" role="status" aria-live="polite"></span>
   <header class="site-header">
     <div class="wrap">
-      <a class="wordmark" href="{% url 'web:track' %}">
+      <a class="wordmark" href="{% url 'web:aircargo' %}">
         <span class="logo-badge"><img class="logo" src="{% static 'web/jnd-logo.png' %}" alt="JND" width="111" height="64"></span>
         <span class="name">Track &amp; Trace</span>
       </a>
@@ -37,7 +37,6 @@
     </div>
   </header>
   <nav class="subnav"><div class="wrap">
-    <a href="{% url 'web:track' %}">Track</a>
     <a href="{% url 'web:aircargo' %}">Air cargo</a>
     <a href="{% url 'web:ocean' %}">Ocean</a>
   </div></nav>

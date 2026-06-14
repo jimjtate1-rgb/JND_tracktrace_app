@@ -35,7 +35,3 @@ def test_blank_lists_airlines(client):
     assert r.status_code == 200 and b"Supported airlines" in r.content
 
 
-@pytest.mark.django_db
-def test_manual_airline_pick_redirects(client):
-    r = client.get("/aircargo/", {"airline": "EK"})
-    assert r.status_code == 302 and "skycargo.com" in r["Location"]

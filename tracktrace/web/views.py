@@ -142,13 +142,7 @@ def aircargo_view(request):
     """Air-cargo router: detect the airline from the AWB's 3-digit prefix and
     forward to that airline's cargo tracking (with a manual picker fallback)."""
     awb = (request.GET.get("awb") or "").strip()
-    airline_iata = (request.GET.get("airline") or "").strip()
     airlines = airlines_sorted()
-
-    if airline_iata:  # manual pick from the list
-        for a in airlines:
-            if a["iata"] == airline_iata:
-                return redirect(a["url"])
 
     ctx = {"awb": awb, "airlines": airlines, "error": None, "warn": None,
            "prefix": "", "go_url": "", "go_name": ""}
@@ -162,11 +156,11 @@ def aircargo_view(request):
             hit = lookup(prefix)
             bad_check = len(digits) >= 11 and not is_valid_awb(digits[:11])
             if hit and not bad_check:
-                return redirect(hit[2])
+                return redirect(hit["url"])
             if hit and bad_check:
                 ctx["warn"] = (f"That AWB's check digit doesn't validate (possible typo), "
-                               f"but prefix {prefix} is {hit[0]}.")
-                ctx["go_url"], ctx["go_name"] = hit[2], hit[0]
+                               f"but prefix {prefix} is {hit['name']}.")
+                ctx["go_url"], ctx["go_name"] = hit["url"], hit["name"]
             else:
                 ctx["error"] = f"Airline for prefix {prefix} isn't in the list yet — pick it below."
     return render(request, "web/aircargo.html", ctx)
@@ -176,13 +170,7 @@ def ocean_view(request):
     """Ocean router: detect the shipping line from the first 4 letters of a
     container or B/L number and forward to that line's tracking (with a picker)."""
     num = (request.GET.get("num") or "").strip()
-    scac = (request.GET.get("line") or "").strip().upper()
     lines = lines_sorted()
-
-    if scac:  # manual pick from the list
-        for l in lines:
-            if l["scac"] == scac:
-                return redirect(l["url"])
 
     ctx = {"num": num, "lines": lines, "error": None, "warn": None,
            "prefix": "", "go_url": "", "go_name": ""}
