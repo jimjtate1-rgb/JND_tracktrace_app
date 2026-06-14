@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from tracktrace.feeds.base import FeedError
 from tracktrace.feeds.ingest import ingest_shipment
-from tracktrace.feeds.registry import DEFAULT_PROVIDER_BY_REF, FEEDS, get_feed
+from tracktrace.feeds.registry import FEEDS, default_provider, get_feed
 
 
 class Command(BaseCommand):
@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **o):
         ref_type, reference = self._reference(o)
-        provider = o["provider"] or DEFAULT_PROVIDER_BY_REF[ref_type]
+        provider = o["provider"] or default_provider(ref_type)
         if provider not in FEEDS:
             raise CommandError(f"Unknown provider '{provider}'. Available: {', '.join(sorted(FEEDS))}.")
 

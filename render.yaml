@@ -1,7 +1,8 @@
 # Render Blueprint — deploy with: New > Blueprint, then connect this repo.
 # Free tier to start (note: Render's free Postgres is deleted after ~30 days;
 # upgrade the db plan to keep data long-term). preDeployCommand needs a paid
-# instance, so migrations run in the build command here to stay free-tier-friendly.
+# instance, so migrations + seeding run in the START command (once the database is
+# reachable) to stay free-tier-friendly and avoid a first-deploy DB-connection race.
 databases:
   - name: jnd-tracktrace-db
     databaseName: tracktrace

@@ -13,6 +13,7 @@ configurable. Verify against your carrier's DCSA version.
 import hashlib
 import hmac
 import json
+import logging
 import re
 
 from django.conf import settings
@@ -22,7 +23,10 @@ from django.views.decorators.http import require_POST
 
 from tracktrace.feeds.aircargo import AirCargoFeed
 from tracktrace.feeds.dcsa import DcsaFeed
+from tracktrace.feeds.trackcargo import TrackCargoFeed
 from tracktrace.feeds.ingest import ingest_shipment
+
+log = logging.getLogger("tracktrace.feeds.webhooks")
 
 
 def verify_signature(raw_body: bytes, header_value: str, secret: str) -> bool:
@@ -121,4 +125,39 @@ def air_webhook(request):
         "awb": awb,
         "created": created,
         "events": shipment.events.count(),
+    }, status=200)
+
+
+@csrf_exempt
+@require_POST
+def trackcargo_webhook(request):
+    """
+    Inbound TrackCargo webhook (ocean + air). HMAC-signed if TRACKCARGO_WEBHOOK_SECRET
+    is set. Logs the raw payload (so the field mapping can be locked to reality),
+    derives the shipment reference from the payload, and merges the update.
+    """
+    raw = request.body
+    secret = settings.TRACKCARGO_WEBHOOK_SECRET
+    sig = request.headers.get(settings.TRACKCARGO_WEBHOOK_SIGNATURE_HEADER, "")
+    if secret:
+        if not verify_signature(raw, sig, secret):
+            return JsonResponse({"detail": "invalid signature"}, status=401)
+    elif not settings.DEBUG:
+        return JsonResponse({"detail": "webhook secret not configured"}, status=503)
+
+    try:
+        payload = json.loads(raw or b"{}")
+    except ValueError:
+        return JsonResponse({"detail": "invalid JSON"}, status=400)
+
+    log.info("TrackCargo webhook payload: %s", payload)
+    ref_type, reference = TrackCargoFeed.extract_reference(payload if isinstance(payload, dict) else {})
+    if not reference:
+        return JsonResponse({"detail": "no shipment reference found in payload"}, status=422)
+
+    normalized = TrackCargoFeed.parse_payload(payload, reference=reference, reference_type=ref_type)
+    shipment, created = ingest_shipment(normalized, replace_events=False)
+    return JsonResponse({
+        "status": "accepted", "reference": reference, "reference_type": ref_type,
+        "created": created, "events": shipment.events.count(),
     }, status=200)

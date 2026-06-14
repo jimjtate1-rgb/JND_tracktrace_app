@@ -1,8 +1,12 @@
+import re
 from datetime import datetime
 
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from tracktrace.traceapi.carriers import carriers as list_carriers, detect_carrier
+from tracktrace.traceapi.validators import is_valid_awb, is_valid_container_number
+from tracktrace.web.airlines import airlines_sorted, lookup
+from tracktrace.web.shipping_lines import lines_sorted, lookup_line
 from tracktrace.traceapi.selectors import (
     get_traces,
     serialize_cargo,
@@ -132,3 +136,72 @@ def track_view(request):
         "carriers": list_carriers(with_scac_only=True),
         "modes": [("ocean", "Ocean"), ("air", "Air")],
     })
+
+
+def aircargo_view(request):
+    """Air-cargo router: detect the airline from the AWB's 3-digit prefix and
+    forward to that airline's cargo tracking (with a manual picker fallback)."""
+    awb = (request.GET.get("awb") or "").strip()
+    airline_iata = (request.GET.get("airline") or "").strip()
+    airlines = airlines_sorted()
+
+    if airline_iata:  # manual pick from the list
+        for a in airlines:
+            if a["iata"] == airline_iata:
+                return redirect(a["url"])
+
+    ctx = {"awb": awb, "airlines": airlines, "error": None, "warn": None,
+           "prefix": "", "go_url": "", "go_name": ""}
+    if awb:
+        digits = re.sub(r"\D", "", awb)
+        if len(digits) < 3:
+            ctx["error"] = "Enter an AWB like 160-12345675 (3-digit airline prefix + 8 digits)."
+        else:
+            prefix = digits[:3]
+            ctx["prefix"] = prefix
+            hit = lookup(prefix)
+            bad_check = len(digits) >= 11 and not is_valid_awb(digits[:11])
+            if hit and not bad_check:
+                return redirect(hit[2])
+            if hit and bad_check:
+                ctx["warn"] = (f"That AWB's check digit doesn't validate (possible typo), "
+                               f"but prefix {prefix} is {hit[0]}.")
+                ctx["go_url"], ctx["go_name"] = hit[2], hit[0]
+            else:
+                ctx["error"] = f"Airline for prefix {prefix} isn't in the list yet — pick it below."
+    return render(request, "web/aircargo.html", ctx)
+
+
+def ocean_view(request):
+    """Ocean router: detect the shipping line from the first 4 letters of a
+    container or B/L number and forward to that line's tracking (with a picker)."""
+    num = (request.GET.get("num") or "").strip()
+    scac = (request.GET.get("line") or "").strip().upper()
+    lines = lines_sorted()
+
+    if scac:  # manual pick from the list
+        for l in lines:
+            if l["scac"] == scac:
+                return redirect(l["url"])
+
+    ctx = {"num": num, "lines": lines, "error": None, "warn": None,
+           "prefix": "", "go_url": "", "go_name": ""}
+    if num:
+        cleaned = re.sub(r"[^A-Za-z0-9]", "", num).upper()
+        if len(cleaned) < 4 or not cleaned[:4].isalpha():
+            ctx["error"] = "Enter a container (MSKU1234567) or B/L number starting with the line's 4-letter code."
+        else:
+            prefix = cleaned[:4]
+            ctx["prefix"] = prefix
+            hit = lookup_line(prefix)
+            is_container = bool(re.fullmatch(r"[A-Z]{4}\d{7}", cleaned))
+            bad_check = is_container and not is_valid_container_number(cleaned)
+            if hit and not bad_check:
+                return redirect(hit["url"])
+            if hit and bad_check:
+                ctx["warn"] = (f"That container's check digit doesn't validate (possible typo), "
+                               f"but prefix {prefix} is {hit['name']}.")
+                ctx["go_url"], ctx["go_name"] = hit["url"], hit["name"]
+            else:
+                ctx["error"] = f"Shipping line for code {prefix} isn't in the list yet — pick it below."
+    return render(request, "web/ocean.html", ctx)

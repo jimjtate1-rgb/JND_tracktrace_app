@@ -113,9 +113,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # WhiteNoise serves static files in production (compressed + cache-busted hashes),
 # so the site is styled with DEBUG=False without a separate web server / CDN.
+# The manifest backend requires collectstatic, so tests/local use the plain one.
+_USE_MANIFEST = env.bool("STATIC_MANIFEST", default=not DEBUG)
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        if _USE_MANIFEST else "whitenoise.storage.CompressedStaticFilesStorage"
+    },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -168,3 +173,12 @@ DCSA_WEBHOOK_SIGNATURE_HEADER = env("DCSA_WEBHOOK_SIGNATURE_HEADER", default="No
 # Air inbound webhooks (provider -> us). HMAC-signed FSU callbacks.
 AIR_WEBHOOK_SECRET = env("AIR_WEBHOOK_SECRET", default="")
 AIR_WEBHOOK_SIGNATURE_HEADER = env("AIR_WEBHOOK_SIGNATURE_HEADER", default="X-Signature")
+
+# TrackCargo aggregator (ocean BL/container + air AWB via one key).
+TRACKCARGO_BASE_URL = env("TRACKCARGO_BASE_URL", default="https://api.trackcargo.com")
+TRACKCARGO_API_KEY = env("TRACKCARGO_API_KEY", default="")
+TRACKCARGO_WEBHOOK_SECRET = env("TRACKCARGO_WEBHOOK_SECRET", default="")
+TRACKCARGO_WEBHOOK_SIGNATURE_HEADER = env("TRACKCARGO_WEBHOOK_SIGNATURE_HEADER", default="X-Signature")
+
+# Optional: force one provider for all lookups (e.g. "trackcargo"); else per-reference default.
+FEED_PROVIDER = env("FEED_PROVIDER", default="")

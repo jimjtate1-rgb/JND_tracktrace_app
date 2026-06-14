@@ -185,6 +185,53 @@ returns standard equipment/transport moves + planned dates, private (OAuth2) acc
 adds inland/rail moves and is gated to parties on the booking. Spec:
 github.com/dcsaorg/DCSA-OpenAPI.
 
+### Aggregator: TrackCargo (ocean + air, one key)
+
+TrackCargo covers ocean (BL / booking / container) and air (AWB) through a single
+key, so it's the simplest way to track real shipments across many carriers. It's
+**asynchronous**: you submit a reference (creates a tracking order), TrackCargo
+fetches from the carrier, and data arrives over time (ocean refreshes ~daily, air
+~2-hourly) — it can also push updates to a webhook.
+
+Setup:
+1. Sign up at trackcargo.co, get an API key.
+2. In Render → the web service → **Environment**, add:
+   `TRACKCARGO_API_KEY=<key>` and `FEED_PROVIDER=trackcargo` (routes all lookups to it).
+3. Redeploy. Add a shipment from the service **Shell**:
+   `python manage.py pull_shipment --bol <real BOL>` (or `--container` / `--awb`).
+   The first call may be "pending" (async) — run again shortly, or set up the webhook.
+4. (Optional) In TrackCargo, point a webhook at
+   `https://<your-app>.onrender.com/api/feeds/trackcargo/webhook/`, and set
+   `TRACKCARGO_WEBHOOK_SECRET` so updates verify and flow in automatically.
+
+Finalising the field mapping: TrackCargo's exact JSON field names aren't published,
+so `trackcargo.py` maps them tolerantly. To lock it to reality, run
+`python manage.py trackcargo_probe --bol <real BOL>` and share the printed JSON —
+the mapping is centralised in `TrackCargoFeed.parse_payload`.
+
+### Air cargo router (track-trace.com/aircargo-style)
+
+`/aircargo` behaves like track-trace.com/aircargo: enter an AWB and it reads the
+first 3 digits (the IATA airline prefix) to send you straight to that airline's
+cargo tracking — free, instant, no API key. About 70 airlines are mapped in
+`tracktrace/web/airlines.py` (the China->US lane plus major freighters); an
+unrecognised prefix shows a manual airline picker, and an invalid check digit
+warns before routing. The same prefix-routing can be added for ocean container/BL
+using the SCAC detection already in `carriers.py`.
+
+### Ocean router (container & B/L)
+
+`/ocean` is the ocean counterpart of the air-cargo router: enter a container or
+B/L number and it reads the first 4 letters to send you to the shipping line's
+tracking. A container number is `AAAU1234567` (an ISO 6346 owner prefix such as
+`MSKU` = Maersk); a B/L usually starts with the line's SCAC (such as `MEDU` = MSC).
+`tracktrace/web/shipping_lines.py` maps ~21 lines, each with its SCAC plus common
+container prefixes (Maersk, MSC, CMA CGM, COSCO, Hapag-Lloyd, ONE, Evergreen, OOCL,
+Yang Ming, HMM, ZIM, PIL, Wan Hai, Matson, and more). A genuine 11-character
+container number with a bad ISO check digit is flagged as a likely typo (with a
+"track anyway" link) instead of silently routing; unknown prefixes show a manual
+picker. Free, instant, no API key — same as the air router.
+
 ## Run it (SQLite, no Docker needed)
 
 ```bash
@@ -271,16 +318,16 @@ wired for the live domain.
 2. In Render: **New → Blueprint**, connect the repo. It reads `render.yaml` and
    provisions a web service + a Postgres database, sets `DEBUG=False`, generates a
    `SECRET_KEY`, and wires `DATABASE_URL` automatically.
-3. First deploy runs the build (`collectstatic`, `migrate`, and seeds the sample
-   shipments on first run) and starts gunicorn.
+3. The build installs deps and runs `collectstatic`; on startup the service runs
+   `migrate` and seeds the sample shipments, then starts gunicorn.
    The site comes up at `https://<your-app>.onrender.com` — `ALLOWED_HOSTS` and
    `CSRF_TRUSTED_ORIGINS` pick that hostname up on their own.
 4. (Optional) Open the service **Shell** and run `python manage.py createsuperuser`
    for `/admin`. The sample shipments are seeded automatically on the first deploy:
    the build runs `seed_data --if-empty`, which seeds only an empty database and is a
    no-op on later deploys, so it never wipes real data. To launch with an empty
-   database instead, drop `&& python manage.py seed_data --if-empty` from
-   `buildCommand` in `render.yaml`.
+   database instead, drop `python manage.py seed_data --if-empty &&` from
+   `startCommand` in `render.yaml`.
 
 Going live with real carrier data: add `DCSA_BASE_URL` / `DCSA_API_KEY` /
 `DCSA_WEBHOOK_SECRET` and the `AIR_FEED_*` / `AIR_WEBHOOK_*` keys under the service's

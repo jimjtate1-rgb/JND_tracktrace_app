@@ -36,6 +36,11 @@
       </button>
     </div>
   </header>
+  <nav class="subnav"><div class="wrap">
+    <a href="{% url 'web:track' %}">Track</a>
+    <a href="{% url 'web:aircargo' %}">Air cargo</a>
+    <a href="{% url 'web:ocean' %}">Ocean</a>
+  </div></nav>
   {% block content %}{% endblock %}
   <footer class="site-footer">
     <div class="wrap">

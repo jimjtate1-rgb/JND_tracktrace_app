@@ -331,3 +331,36 @@ button.chip { font: 500 13px var(--mono); text-align: left; cursor: pointer; col
 }
 .wordmark .logo { height: 26px; width: auto; display: block; }
 [data-theme="neon"] .wordmark .logo-badge { box-shadow: 0 0 16px rgba(255, 45, 149, .4); }
+
+/* ---- sub-nav (Track / Air cargo) ---- */
+.subnav { background: var(--card); border-bottom: 1px solid var(--line); }
+.subnav .wrap { display: flex; gap: 18px; align-items: center; height: 42px; }
+.subnav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
+.subnav a:hover { color: var(--text); }
+
+/* ---- air cargo router page ---- */
+.ac { padding: 28px 0 60px; }
+.ac-hero h1 { font-family: var(--display); font-size: 30px; margin: 0 0 6px; }
+.ac-sub { color: var(--muted); margin: 0 0 18px; max-width: 62ch; }
+.ac-hint { color: var(--muted); font: 600 12px/1 var(--mono); }
+.ac-msg { margin: 14px 0 0; padding: 12px 14px; border-radius: var(--r); border: 1px solid var(--line); }
+.ac-msg.error { border-color: var(--st-late-fg); color: var(--st-late-fg); background: var(--st-late-bg); }
+.ac-msg.warn { border-color: var(--focus); }
+.ac-go { margin-left: 8px; font-weight: 600; color: var(--teal); }
+.ac-how { margin-top: 30px; }
+.ac-how h2, .ac-list h2 { font-family: var(--display); font-size: 18px; margin: 0 0 8px; }
+.ac-how p { color: var(--muted); max-width: 72ch; }
+.ac-how code { font: 600 13px/1 var(--mono); color: var(--text); }
+.ac-list { margin-top: 30px; }
+.ac-count { margin-left: 8px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px;
+  color: var(--muted); font: 600 12px/1 var(--mono); }
+.ac-airlines { list-style: none; margin: 14px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.ac-airlines a { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  color: var(--text); text-decoration: none; }
+.ac-airlines a:hover { border-color: var(--teal); }
+.ac-pfx { font: 600 13px/1 var(--mono); color: var(--teal); min-width: 34px; }
+.ac-name { flex: 1; font-size: 14px; }
+.ac-iata { font: 600 11px/1 var(--mono); color: var(--muted); }
+[data-theme="neon"] .ac-airlines a:hover { box-shadow: 0 0 14px rgba(255,45,149,.35); }
