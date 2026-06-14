@@ -1,0 +1,49 @@
+{% extends "web/base.html" %}
+{% block title %}Ocean container &amp; B/L tracking — JND Track &amp; Trace{% endblock %}
+{% block content %}
+<main id="main" class="wrap ac">
+  <section class="ac-hero">
+    <h1>Ocean container &amp; B/L tracking</h1>
+    <p class="ac-sub">Enter a container or bill of lading number and we'll route you to the shipping
+      line's tracking. The first 4 letters identify the line automatically.</p>
+
+    <form class="search" method="get" action="{% url 'web:ocean' %}" role="search">
+      <div class="field">
+        <label for="num">Container or B/L number</label>
+        <input id="num" name="num" type="text" autocomplete="off"
+               value="{{ num }}" placeholder="MSKU1234567 or MAEU12345678">
+      </div>
+      <div class="search-actions">
+        <button class="btn" type="submit">Track</button>
+        <span class="ac-hint">Container: AAAU1234567 · B/L: starts with the line's SCAC</span>
+      </div>
+    </form>
+
+    {% if error %}<p class="ac-msg error" role="alert">{{ error }}</p>{% endif %}
+    {% if warn %}
+      <p class="ac-msg warn" role="alert">{{ warn }}
+        {% if go_url %}<a class="ac-go" href="{{ go_url }}" target="_blank" rel="noopener">Track on {{ go_name }} anyway →</a>{% endif %}
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="ac-how">
+    <h2>How it works</h2>
+    <p>Container numbers look like <code>AAAU1234567</code> (4 letters + 7 digits). We read the first
+      4 letters — a container owner prefix like <code>MSKU</code>, or a B/L's SCAC like <code>MEDU</code> —
+      to send you to the right line's tracking. If the line isn't detected, pick it from the list below.</p>
+  </section>
+
+  <section class="ac-list">
+    <h2>Supported lines <span class="ac-count">{{ lines|length }}</span></h2>
+    <ul class="ac-airlines">
+      {% for l in lines %}
+        <li><a href="{{ l.url }}" target="_blank" rel="noopener">
+          {% if l.scac %}<span class="ac-pfx">{{ l.scac }}</span>{% endif %}
+          <span class="ac-name">{{ l.name }}</span>
+        </a></li>
+      {% endfor %}
+    </ul>
+  </section>
+</main>
+{% endblock %}

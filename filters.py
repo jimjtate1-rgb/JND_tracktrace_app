@@ -1,0 +1,48 @@
+{% extends "web/base.html" %}
+{% block title %}Air cargo tracking — JND Track &amp; Trace{% endblock %}
+{% block content %}
+<main id="main" class="wrap ac">
+  <section class="ac-hero">
+    <h1>Air cargo tracking</h1>
+    <p class="ac-sub">Enter an air waybill (AWB) and we'll take you straight to the airline's cargo
+      tracking. The first 3 digits identify the airline automatically.</p>
+
+    <form class="search" method="get" action="{% url 'web:aircargo' %}" role="search">
+      <div class="field">
+        <label for="awb">Air waybill number</label>
+        <input id="awb" name="awb" type="text" inputmode="numeric" autocomplete="off"
+               value="{{ awb }}" placeholder="160-12345675">
+      </div>
+      <div class="search-actions">
+        <button class="btn" type="submit">Track</button>
+        <span class="ac-hint">Format: 123-12345678</span>
+      </div>
+    </form>
+
+    {% if error %}<p class="ac-msg error" role="alert">{{ error }}</p>{% endif %}
+    {% if warn %}
+      <p class="ac-msg warn" role="alert">{{ warn }}
+        {% if go_url %}<a class="ac-go" href="{{ go_url }}" target="_blank" rel="noopener">Track on {{ go_name }} anyway →</a>{% endif %}
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="ac-how">
+    <h2>How it works</h2>
+    <p>AWB numbers look like <code>123-12345678</code>. We read the first 3 digits to send you to the
+      correct airline's cargo tracking. If the airline isn't detected, pick it from the list below.</p>
+  </section>
+
+  <section class="ac-list">
+    <h2>Supported airlines <span class="ac-count">{{ airlines|length }}</span></h2>
+    <ul class="ac-airlines">
+      {% for a in airlines %}
+        <li><a href="{{ a.url }}" target="_blank" rel="noopener">
+          {% if a.iata %}<span class="ac-pfx">{{ a.iata }}</span>{% endif %}
+          <span class="ac-name">{{ a.name }}</span>
+        </a></li>
+      {% endfor %}
+    </ul>
+  </section>
+</main>
+{% endblock %}

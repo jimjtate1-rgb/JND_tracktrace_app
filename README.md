@@ -209,15 +209,20 @@ so `trackcargo.py` maps them tolerantly. To lock it to reality, run
 `python manage.py trackcargo_probe --bol <real BOL>` and share the printed JSON —
 the mapping is centralised in `TrackCargoFeed.parse_payload`.
 
+The home page (`/`) opens the **Air cargo** router; the two tabs are **Air cargo**
+and **Ocean**. (The earlier DB-backed "Track" page was removed — the routers cover
+the use case. The REST API under `/api/` and the carrier feeds remain available.)
+
 ### Air cargo router (track-trace.com/aircargo-style)
 
 `/aircargo` behaves like track-trace.com/aircargo: enter an AWB and it reads the
 first 3 digits (the IATA airline prefix) to send you straight to that airline's
-cargo tracking — free, instant, no API key. About 70 airlines are mapped in
-`tracktrace/web/airlines.py` (the China->US lane plus major freighters); an
-unrecognised prefix shows a manual airline picker, and an invalid check digit
-warns before routing. The same prefix-routing can be added for ocean container/BL
-using the SCAC detection already in `carriers.py`.
+cargo tracking — free, instant, no API key. `tracktrace/web/airlines.py` lists all
+~241 airlines (full coverage, same as track-trace), of which ~169 are mapped to a
+3-digit AWB prefix for automatic detection; the rest are one tap from the list. An
+unrecognised prefix shows the airline picker, and an invalid check digit warns
+before routing. The list + prefixes are generated from track-trace's airline list
+joined with public IATA prefix tables.
 
 ### Ocean router (container & B/L)
 
@@ -225,9 +230,11 @@ using the SCAC detection already in `carriers.py`.
 B/L number and it reads the first 4 letters to send you to the shipping line's
 tracking. A container number is `AAAU1234567` (an ISO 6346 owner prefix such as
 `MSKU` = Maersk); a B/L usually starts with the line's SCAC (such as `MEDU` = MSC).
-`tracktrace/web/shipping_lines.py` maps ~21 lines, each with its SCAC plus common
-container prefixes (Maersk, MSC, CMA CGM, COSCO, Hapag-Lloyd, ONE, Evergreen, OOCL,
-Yang Ming, HMM, ZIM, PIL, Wan Hai, Matson, and more). A genuine 11-character
+`tracktrace/web/shipping_lines.py` lists all ~172 lines (full coverage, same as
+track-trace); the major lines (Maersk, MSC, CMA CGM, COSCO, Hapag-Lloyd, ONE,
+Evergreen, OOCL, Yang Ming, HMM, ZIM, PIL, Wan Hai, Matson, and more) are mapped to
+their SCAC + common container owner prefixes for auto-detection, and any other line
+is one tap from the list. A genuine 11-character
 container number with a bad ISO check digit is flagged as a likely typo (with a
 "track anyway" link) instead of silently routing; unknown prefixes show a manual
 picker. Free, instant, no API key — same as the air router.
